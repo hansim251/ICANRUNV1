@@ -6,3 +6,4 @@ sqlmodel
 itsdangerous
 aiosqlite
 asyncpg
+gunicorn
