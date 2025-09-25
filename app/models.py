@@ -1,5 +1,4 @@
 """SQLModel models for users, sessions, and Strava data."""
-from __future__ import annotations
 
 from datetime import datetime, timedelta
 from typing import Optional
