@@ -6,6 +6,8 @@ from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -18,7 +20,6 @@ from .db import get_session, init_db
 from .models import Session
 from .routers import activities, me, stats
 
-load_dotenv()
 
 TITLE = "ICANRUN Strava Dashboard"
 BASE_DIR = Path(__file__).resolve().parent
