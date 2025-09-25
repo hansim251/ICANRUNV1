@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Strava Insights</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --strava-orange: #fc5200;
+            --strava-orange-dark: #d43f00;
+            --bg-soft: #f4f5f7;
+            --bg-card: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-soft: rgba(17, 24, 39, 0.08);
+            --shadow-card: 0 12px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg-soft);
+            color: var(--text-primary);
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: linear-gradient(135deg, #1f2937 0%, #0b1220 50%, #111827 100%);
+            color: #fff;
+            padding: 1.25rem clamp(1.5rem, 4vw, 4rem);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.35);
+        }
+
+        .topbar__brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-badge {
+            background: var(--strava-orange);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            text-transform: uppercase;
+        }
+
+        .brand-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .brand-copy span:first-child {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .brand-copy span:last-child {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .topbar__actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            border: 0;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 999px;
+            padding: 0.65rem 1.4rem;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .pill:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: 2px;
+        }
+
+        .pill--primary {
+            background: #fff;
+            color: var(--text-primary);
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.18);
+        }
+
+        .pill--primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 28px rgba(255, 255, 255, 0.22);
+        }
+
+        .pill--secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .pill--secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .layout {
+            padding: clamp(2rem, 4vw, 3.5rem) clamp(1.5rem, 4vw, 4rem) 4rem;
+            max-width: 1180px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        .hero {
+            background: linear-gradient(120deg, rgba(252, 82, 0, 0.12), rgba(252, 82, 0, 0.04));
+            border-radius: 24px;
+            padding: clamp(1.75rem, 4vw, 3rem);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border: 1px solid rgba(252, 82, 0, 0.18);
+            box-shadow: 0 20px 35px rgba(252, 82, 0, 0.12);
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: clamp(2.1rem, 6vw, 2.8rem);
+            font-weight: 700;
+        }
+
+        .hero p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            max-width: 42rem;
+            line-height: 1.6;
+        }
+
+        .hero__meta {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+            color: rgba(17, 24, 39, 0.65);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-soft);
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .stat-card span {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .stat-card strong {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .activity-list {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .activity-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.75rem;
+            border: 1px solid var(--border-soft);
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .activity-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(252, 82, 0, 0.04), transparent 55%);
+            pointer-events: none;
+        }
+
+        .activity-card__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .activity-card__title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .activity-card__date {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .chip {
+            background: rgba(252, 82, 0, 0.12);
+            color: var(--strava-orange);
+            border-radius: 999px;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .activity-card__metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1.25rem;
+            position: relative;
+        }
+
+        .metric {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .metric span {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .metric strong {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .activity-card__footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .activity-summary {
+            background: rgba(17, 24, 39, 0.03);
+            border-radius: 16px;
+            padding: 1.1rem 1.25rem;
+            border: 1px solid rgba(17, 24, 39, 0.05);
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, opacity 0.35s ease, margin-top 0.35s ease;
+            margin-top: 0;
+            white-space: pre-line;
+            position: relative;
+        }
+
+        .activity-summary.open {
+            max-height: 480px;
+            opacity: 1;
+            margin-top: 0.5rem;
+        }
+
+        .activity-summary__title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+        }
+
+        .activity-summary__body {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .activity-card__actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .activity-card__actions .pill {
+            flex: 0 0 auto;
+        }
+
+        .activity-coach {
+            background: rgba(17, 24, 39, 0.03);
+            border: 1px solid rgba(17, 24, 39, 0.05);
+            border-radius: 16px;
+            padding: 1.1rem 1.25rem;
+            margin-top: 0.75rem;
+            display: none;
+            white-space: pre-line;
+        }
+
+        .activity-coach.open {
+            display: block;
+        }
+
+        .activity-coach__title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .activity-coach__body {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .loading-state,
+        .empty-state,
+        .error-state {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border-soft);
+            box-shadow: var(--shadow-card);
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .error-state {
+            color: #b91c1c;
+            border-color: rgba(185, 28, 28, 0.1);
+        }
+
+        @media (max-width: 720px) {
+            .activity-card__header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .activity-card__footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .pill--primary,
+            .pill--secondary {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar__brand">
+            <span class="brand-badge">Insights</span>
+            <div class="brand-copy">
+                <span>Strava Companion</span>
+                <span>Your training, simplified.</span>
+            </div>
+        </div>
+        <div class="topbar__actions">
+            <a class="pill pill--secondary" href="/api/strava/login">Connect Strava</a>
+            <button class="pill pill--primary" id="refreshBtn" type="button">Refresh Data</button>
+            <button class="pill pill--primary" id="overallBtn" type="button">Overall Insight</button>
+        </div>
+    </header>
+
+    <main class="layout">
+        <section class="hero">
+            <h1>Strava Insights</h1>
+            <p>Monitor your recent runs, keep an eye on the workload trend, and dive into AI-powered summaries without leaving your browser.</p>
+            <div class="hero__meta" id="heroMeta">
+                <span>Loading session data...</span>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-heading">
+                <h2>Training Snapshot</h2>
+            </div>
+            <div class="stats-grid" id="overviewCards">
+                <div class="stat-card"><span>Total Distance</span><strong>--</strong></div>
+                <div class="stat-card"><span>Average Pace</span><strong>--</strong></div>
+                <div class="stat-card"><span>Weekly Volume</span><strong>--</strong></div>
+                <div class="stat-card"><span>Runs Logged</span><strong>--</strong></div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-heading">
+                <h2>Overall Insight</h2>
+            </div>
+            <div class="activity-summary" id="overallInsightPanel">
+                <div class="activity-summary__title">Marathon Prep Overview</div>
+                <div class="activity-summary__body" data-overall-body="">Click "Overall Insight" to generate a marathon-readiness overview.</div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-heading">
+                <h2>Recent Runs</h2>
+                <span id="activityCount" class="chip">Loading...</span>
+            </div>
+            <div class="activity-list" id="activityList">
+                <div class="loading-state">Pulling your latest activities...</div>
+            </div>
+        </section>
+    </main>
+
+        
+    
+    <script>
+
+        (function () {
+            function initDashboard() {
+                const summaryCache = new Map();
+                const coachCache = new Map();
+                const activityListEl = document.getElementById('activityList');
+                const overviewCardsEl = document.getElementById('overviewCards');
+                const activityCountEl = document.getElementById('activityCount');
+                const heroMetaEl = document.getElementById('heroMeta');
+                const refreshBtn = document.getElementById('refreshBtn');
+                const overallBtn = document.getElementById('overallBtn');
+                const overallPanel = document.getElementById('overallInsightPanel');
+                const overallBodyEl = overallPanel ? overallPanel.querySelector('[data-overall-body]') : null;
+
+                if (!activityListEl || !overviewCardsEl || !activityCountEl || !heroMetaEl || !refreshBtn || !overallBtn || !overallPanel || !overallBodyEl) {
+                    console.error('[dashboard:init] Missing required DOM nodes');
+                    return;
+                }
+
+                const RUN_TYPE_SET = new Set(['run', 'trailrun', 'virtualrun']);
+                const TYPE_LABELS = {
+                    run: 'Run',
+                    trailrun: 'Trail Run',
+                    virtualrun: 'Virtual Run',
+                    walk: 'Walk',
+                    hike: 'Hike',
+                    workout: 'Workout',
+                    workout_routine: 'Workout',
+                    weighttraining: 'Strength',
+                    ride: 'Ride',
+                    gravelride: 'Gravel Ride',
+                    virtualride: 'Virtual Ride',
+                    ebrikeride: 'E-Bike Ride',
+                    swim: 'Swim',
+                    row: 'Row',
+                    yoga: 'Yoga',
+                    elliptical: 'Elliptical',
+                };
+
+                let overallInsightCache = null;
+                const defaultOverallMessage = 'Click "Overall Insight" to generate a marathon-readiness overview.';
+
+                function escapeHtml(value) {
+                    return String(value ?? '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;');
+                }
+
+                function renderRichText(value) {
+                    if (!value) return '';
+                    return escapeHtml(value)
+                        .replace(/^-\s+/gm, '&bull; ')
+                        .replace(/\n{2,}/g, '<br><br>')
+                        .replace(/\n/g, '<br>');
+
+
+                }
+
+                function resetOverallPanel() {
+                    overallPanel.classList.remove('open');
+                    overallBodyEl.innerHTML = defaultOverallMessage;
+                }
+
+                function handleAuthStatus() {
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('connected') === '1') {
+                        heroMetaEl.innerHTML = '<span>Strava successfully connected. Loading activities...</span>';
+                        activityListEl.innerHTML = '<div class="loading-state">Pulling your latest activities...</div>';
+                        activityCountEl.textContent = 'Loading...';
+                        summaryCache.clear();
+                        coachCache.clear();
+                        overallInsightCache = null;
+                        resetOverallPanel();
+                        if (window.history && window.history.replaceState) {
+                            window.history.replaceState({}, '', window.location.pathname);
+                        }
+                    } else if (params.has('auth_error')) {
+                        const errorKey = params.get('auth_error') || '';
+                        const friendly = errorKey === 'access_denied'
+                            ? 'Authorisation was cancelled. Please try connecting again.'
+                            : errorKey === 'missing_code'
+                                ? 'Missing authorisation code from Strava.'
+                                : 'Could not complete Strava authorisation. Please retry.';
+                        heroMetaEl.innerHTML = `<span>${friendly}</span>`;
+                        activityListEl.innerHTML = '<div class="error-state">Strava connection failed.</div>';
+                        activityCountEl.textContent = 'Auth error';
+                        summaryCache.clear();
+                        coachCache.clear();
+                        overallInsightCache = null;
+                        resetOverallPanel();
+                        if (window.history && window.history.replaceState) {
+                            window.history.replaceState({}, '', window.location.pathname);
+                        }
+                    }
+                }
+
+                function toNumber(value) {
+                    const n = Number(value);
+                    return Number.isFinite(n) ? n : 0;
+                }
+
+                function normalizeType(value) {
+                    if (value === null || value === undefined) return '';
+                    const raw = String(value).trim().toLowerCase();
+                    if (!raw) return '';
+                    if (raw.startsWith('activitytype.')) {
+                        return raw.split('.', 2)[1] || '';
+                    }
+                    const rootMatch = raw.match(/root='([^']+)'/);
+                    if (rootMatch) {
+                        return rootMatch[1];
+                    }
+                    if (raw.startsWith('activitytype(') && raw.endsWith(')')) {
+                        const inner = raw.slice(raw.indexOf('(') + 1, raw.lastIndexOf(')')).split(',', 1)[0];
+                        return inner.replace(/['"\s]/g, '');
+                    }
+                    return raw;
+                }
+
+                function parseDate(value) {
+                    if (!value) return null;
+                    const date = new Date(value);
+                    return Number.isFinite(date.getTime()) ? date : null;
+                }
+
+                function formatDate(isoString) {
+                    const date = parseDate(isoString);
+                    if (!date) return 'No start time';
+                    const options = {
+                        timeZone: 'Australia/Brisbane',
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    };
+                    return new Intl.DateTimeFormat('en-AU', options).format(date);
+                }
+
+                function formatPace(minPerKm) {
+                    if (!minPerKm || !Number.isFinite(minPerKm)) return '--';
+                    const totalSeconds = minPerKm * 60;
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = Math.round(totalSeconds % 60).toString().padStart(2, '0');
+                    return `${minutes}:${seconds} /km`;
+                }
+
+                function updateHeroMeta(runs) {
+                    if (!runs.length) {
+                        heroMetaEl.innerHTML = '<span>No recent runs found.</span>';
+                        return;
+                    }
+                    const sorted = [...runs].sort((a, b) => {
+                        const aDate = parseDate(a.start_utc)?.getTime() || 0;
+                        const bDate = parseDate(b.start_utc)?.getTime() || 0;
+                        return bDate - aDate;
+                    });
+                    const latest = sorted[0];
+                    const latestDate = parseDate(latest.start_utc);
+                    const lastUpdated = latestDate
+                        ? latestDate.toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })
+                        : '--';
+                    heroMetaEl.innerHTML = `
+                        <span><strong>${runs.length}</strong> runs in the feed</span>
+                        <span>Last activity synced: <strong>${lastUpdated}</strong></span>
+                    `;
+                }
+
+                function updateStats(runs) {
+                    if (!runs.length) {
+                        overviewCardsEl.innerHTML = `
+                            <div class="stat-card"><span>Total Distance</span><strong>0 km</strong></div>
+                            <div class="stat-card"><span>Average Pace</span><strong>--</strong></div>
+                            <div class="stat-card"><span>Time in Motion</span><strong>0 h</strong></div>
+                            <div class="stat-card"><span>Runs Logged</span><strong>0</strong></div>
+                        `;
+                        return;
+                    }
+
+                    const totals = runs.reduce((acc, act) => {
+                        const dist = toNumber(act.distance_km);
+                        const move = toNumber(act.moving_time_min);
+                        acc.distance += dist;
+                        acc.movingMin += move;
+                        return acc;
+                    }, { distance: 0, movingMin: 0 });
+
+                    const avgPace = totals.distance > 0 ? totals.movingMin / totals.distance : null;
+                    const hours = totals.movingMin / 60;
+
+                    overviewCardsEl.innerHTML = `
+                        <div class="stat-card"><span>Total Distance</span><strong>${totals.distance.toFixed(1)} km</strong></div>
+                        <div class="stat-card"><span>Average Pace</span><strong>${formatPace(avgPace)}</strong></div>
+                        <div class="stat-card"><span>Time in Motion</span><strong>${hours.toFixed(1)} h</strong></div>
+                        <div class="stat-card"><span>Runs Logged</span><strong>${runs.length}</strong></div>
+                    `;
+                }
+
+                function renderActivities(runs, emptyMessage) {
+                    if (!runs.length) {
+                        activityListEl.innerHTML = `<div class="empty-state">${escapeHtml(emptyMessage)}</div>`;
+                        activityCountEl.textContent = '0 runs';
+                        return;
+                    }
+
+                    activityCountEl.textContent = `${runs.length} ${runs.length === 1 ? 'run' : 'runs'}`;
+
+                    const items = [...runs].sort((a, b) => {
+                        const aDate = parseDate(a.start_utc)?.getTime() || 0;
+                        const bDate = parseDate(b.start_utc)?.getTime() || 0;
+                        return bDate - aDate;
+                    });
+
+                    const fragment = document.createDocumentFragment();
+
+                    items.forEach((act) => {
+                        const activityId = act.id;
+                        const typeKey = normalizeType(act.type);
+                        const chipLabel = TYPE_LABELS[typeKey] || (typeKey ? typeKey.charAt(0).toUpperCase() + typeKey.slice(1) : 'Run');
+
+                        const distance = toNumber(act.distance_km).toFixed(1);
+                        const movingMinutes = toNumber(act.moving_time_min).toFixed(1);
+                        const paceSource = Number(act.pace_min_per_km);
+                        const paceDisplay = Number.isFinite(paceSource)
+                            ? formatPace(paceSource)
+                            : formatPace(toNumber(act.moving_time_min) / Math.max(toNumber(act.distance_km), 1));
+                        const avgHr = toNumber(act.avg_hr);
+                        const avgHrDisplay = avgHr > 0 ? `${Math.round(avgHr)} bpm` : '--';
+                        const elevGain = toNumber(act.elev_gain_m);
+                        const elevDisplay = elevGain > 0 ? `${Math.round(elevGain)} m` : '--';
+                        const startDisplay = formatDate(act.start_utc);
+                        const title = act.name ? escapeHtml(act.name) : '(no title)';
+
+                        const card = document.createElement('article');
+                        card.className = 'activity-card';
+                        card.innerHTML = `
+                            <div class='activity-card__header'>
+                                <div>
+                                    <h3 class='activity-card__title'>${title}</h3>
+                                    <div class='activity-card__date'>${startDisplay}</div>
+                                </div>
+                                <span class='chip'>${escapeHtml(chipLabel)}</span>
+                            </div>
+                            <div class='activity-card__metrics'>
+                                <div class='metric'><span>Distance</span><strong>${distance} km</strong></div>
+                                <div class='metric'><span>Moving Time</span><strong>${movingMinutes} min</strong></div>
+                                <div class='metric'><span>Avg Pace</span><strong>${paceDisplay}</strong></div>
+                                <div class='metric'><span>Avg Heart Rate</span><strong>${avgHrDisplay}</strong></div>
+                                <div class='metric'><span>Elevation Gain</span><strong>${elevDisplay}</strong></div>
+                            </div>
+                            <div class='activity-card__footer'>
+                                <span class='activity-card__date'>Tap into the summary for AI-backed pointers.</span>
+                                <div class='activity-card__actions'>
+                                    <button class='pill pill--secondary insights-toggle' type='button' data-activity='${activityId}'>Show Insights</button>
+                                    <button class='pill pill--primary coach-trigger' type='button' data-activity='${activityId}'>Give AI Insight</button>
+                                </div>
+                            </div>
+                            <div class='activity-summary' id='insight-${activityId}'>
+                                <div class='activity-summary__title'>Run Summary</div>
+                                <div class='activity-summary__body' data-summary-body='${activityId}'>Hit "Show Insights" for a quick AI recap.</div>
+                            </div>
+                            <div class='activity-coach' id='coach-${activityId}'>
+                                <div class='activity-coach__title'>AI Coaching Plan</div>
+                                <div class='activity-coach__body' data-coach-body='${activityId}'>Click "Give AI Insight" to generate a personalised training plan.</div>
+                            </div>
+                        `;
+
+                        const toggleBtn = card.querySelector('.insights-toggle');
+                        toggleBtn.addEventListener('click', () => toggleInsights(activityId, toggleBtn));
+
+                        const coachBtn = card.querySelector('.coach-trigger');
+                        coachBtn.addEventListener('click', () => requestCoachPlan(activityId, coachBtn));
+
+                        fragment.appendChild(card);
+                    });
+
+                    activityListEl.innerHTML = '';
+                    activityListEl.appendChild(fragment);
+                }
+
+                async function toggleInsights(activityId, buttonEl) {
+                    const summaryEl = document.getElementById(`insight-${activityId}`);
+                    if (!summaryEl) return;
+                    const bodyEl = summaryEl.querySelector('[data-summary-body]');
+                    const isOpen = summaryEl.classList.contains('open');
+
+                    if (isOpen) {
+                        summaryEl.classList.remove('open');
+                        buttonEl.textContent = 'Show Insights';
+                        return;
+                    }
+
+                    summaryEl.classList.add('open');
+                    buttonEl.textContent = 'Hide Insights';
+
+                    if (summaryCache.has(activityId)) {
+                        bodyEl.innerHTML = summaryCache.get(activityId);
+                        return;
+                    }
+
+                    bodyEl.textContent = 'Fetching AI insights...';
+                    try {
+                        const res = await fetch(`/api/activities/${activityId}/summary`);
+                        if (!res.ok) throw new Error('Failed to fetch summary');
+                        const data = await res.json();
+                        const rawSummary = typeof data.summary === 'string' ? data.summary.trim() : '';
+                        const formatted = rawSummary ? renderRichText(rawSummary) : 'No summary available yet.';
+                        summaryCache.set(activityId, formatted);
+                        bodyEl.innerHTML = formatted;
+                    } catch (error) {
+                        console.error('[summary:error]', error);
+                        bodyEl.textContent = 'Unable to load insights right now. Please try again later.';
+                    }
+                }
+
+                async function requestCoachPlan(activityId, buttonEl) {
+                    const coachEl = document.getElementById(`coach-${activityId}`);
+                    if (!coachEl) return;
+                    const bodyEl = coachEl.querySelector('[data-coach-body]');
+                    coachEl.classList.add('open');
+
+                    if (coachCache.has(activityId)) {
+                        bodyEl.innerHTML = coachCache.get(activityId);
+                        return;
+                    }
+
+                    const originalText = buttonEl.textContent;
+                    buttonEl.disabled = true;
+                    buttonEl.textContent = 'Requesting...';
+                    bodyEl.textContent = 'Generating a personalised coaching plan...';
+
+                    try {
+                        const res = await fetch(`/api/activities/${activityId}/coach`);
+                        if (!res.ok) throw new Error('Failed to generate plan');
+                        const data = await res.json();
+                        const rawPlan = typeof data.plan === 'string' ? data.plan.trim() : '';
+                        const formatted = rawPlan ? renderRichText(rawPlan) : 'No plan available yet.';
+                        coachCache.set(activityId, formatted);
+                        bodyEl.innerHTML = formatted;
+                    } catch (error) {
+                        console.error('[coach:error]', error);
+                        bodyEl.textContent = 'Unable to generate a plan right now. Please try again later.';
+                    } finally {
+                        buttonEl.disabled = false;
+                        buttonEl.textContent = originalText;
+                    }
+                }
+
+                async function requestOverallInsight() {
+                    overallPanel.classList.add('open');
+
+                    if (overallInsightCache) {
+                        overallBodyEl.innerHTML = overallInsightCache;
+                        return;
+                    }
+
+                    const originalText = overallBtn.textContent;
+                    overallBtn.disabled = true;
+                    overallBtn.textContent = 'Requesting...';
+                    overallBodyEl.textContent = 'Generating your overall insight...';
+
+                    try {
+                        const res = await fetch('/api/activities/overall-insight');
+                        if (!res.ok) throw new Error('Failed to generate overall insight');
+                        const data = await res.json();
+                        const raw = typeof data.insight === 'string' ? data.insight.trim() : '';
+                        const formatted = raw ? renderRichText(raw) : 'No insight available yet.';
+                        overallInsightCache = formatted;
+                        overallBodyEl.innerHTML = formatted;
+                    } catch (error) {
+                        console.error('[overall-insight:error]', error);
+                        overallBodyEl.textContent = 'Unable to generate an overall insight right now. Please try again later.';
+                    } finally {
+                        overallBtn.disabled = false;
+                        overallBtn.textContent = originalText;
+                    }
+                }
+
+                async function loadActivities() {
+                    activityListEl.innerHTML = '<div class="loading-state">Pulling your latest activities...</div>';
+                    activityCountEl.textContent = 'Loading...';
+                    summaryCache.clear();
+                    coachCache.clear();
+                    overallInsightCache = null;
+                    resetOverallPanel();
+
+                    try {
+                        const response = await fetch('/api/me/activities');
+                        if (response.status === 401) {
+                            activityListEl.innerHTML = '<div class="empty-state">Connect Strava to start pulling your training diary.</div>';
+                            activityCountEl.textContent = 'Not connected';
+                            heroMetaEl.innerHTML = '<span>Connect your Strava account to see insights.</span>';
+                            return;
+                        }
+                        if (!response.ok) throw new Error('Unable to fetch activities');
+
+                        const data = await response.json();
+                        const activities = Array.isArray(data.activities) ? data.activities : [];
+                        const typeSummary = activities.reduce((acc, act) => {
+                            const key = normalizeType(act && act.type) || 'unknown';
+                            acc[key] = (acc[key] || 0) + 1;
+                            return acc;
+                        }, {});
+                        const summaryEntries = Object.entries(typeSummary);
+                        const summaryText = summaryEntries.length
+                            ? summaryEntries
+                                .map(([type, count]) => {
+                                    const label = TYPE_LABELS[type] || (type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Unknown');
+                                    return `${label} (${count})`;
+                                })
+                                .join(', ')
+                            : 'none';
+
+                        const runs = activities.filter((act) => RUN_TYPE_SET.has(normalizeType(act.type)));
+                        console.debug('[activities:data]', { total: activities.length, runs: runs.length, types: typeSummary });
+
+                        if (runs.length) {
+                            updateHeroMeta(runs);
+                        } else if (activities.length) {
+                            heroMetaEl.innerHTML = `
+                                <span>No runs detected in your latest ${activities.length} activities.</span>
+                                <span>Recent types: ${summaryText}</span>
+                            `;
+                        } else {
+                            updateHeroMeta([]);
+                        }
+
+                        updateStats(runs);
+
+                        const emptyMessage = activities.length
+                            ? `No runs in the latest ${activities.length} activities. Activity types: ${summaryText}`
+                            : 'No runs yet. Connect Strava to start pulling your training diary.';
+
+                        renderActivities(runs, emptyMessage);
+                    } catch (error) {
+                        console.error('[activities:error]', error);
+                        activityListEl.innerHTML = `<div class="error-state">${escapeHtml(error.message || 'Unable to load activities')}</div>`;
+                        activityCountEl.textContent = 'Error';
+                        heroMetaEl.innerHTML = '<span>Could not update activity feed.</span>';
+                    }
+                }
+
+                refreshBtn.addEventListener('click', async () => {
+                    refreshBtn.disabled = true;
+                    refreshBtn.textContent = 'Refreshing...';
+                    try {
+                        await loadActivities();
+                    } finally {
+                        refreshBtn.disabled = false;
+                        refreshBtn.textContent = 'Refresh Data';
+                    }
+                });
+
+                overallBtn.addEventListener('click', requestOverallInsight);
+
+                handleAuthStatus();
+                loadActivities().catch((error) => console.error('[dashboard:init-load-error]', error));
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initDashboard);
+            } else {
+                initDashboard();
+            }
+        })();
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
