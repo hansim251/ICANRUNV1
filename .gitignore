@@ -2,3 +2,5 @@
 .env
 tokens.json
 __pycache__/
+sessions.json
+
