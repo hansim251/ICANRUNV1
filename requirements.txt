@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 python-dotenv
 httpx
-pydantic
-gunicorn
-requests
-stravalib
+sqlmodel
+itsdangerous
+aiosqlite
+asyncpg
