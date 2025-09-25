@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Column, UniqueConstraint, BigInteger
 from sqlmodel import Field, Relationship, SQLModel
 
 SESSION_TTL_DAYS = 14
@@ -54,6 +54,6 @@ class ActivityCache(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: UUID = Field(foreign_key="user.id", nullable=False, index=True)
-    strava_id: int = Field(nullable=False)
+    strava_id: int = Field(sa_column=Column(BigInteger, nullable=False))
     json: str = Field(nullable=False)
     fetched_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
