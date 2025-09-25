@@ -22,8 +22,8 @@ class User(SQLModel, table=True):
     username: Optional[str] = Field(default=None, nullable=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    credentials: Credential | None = Relationship(back_populates="user", sa_relationship_kwargs={"uselist": False})
-    sessions: list[Session] = Relationship(back_populates="user")
+    credentials: "Credential" = Relationship(back_populates="user", sa_relationship_kwargs={"uselist": False})
+    sessions: list["Session"] = Relationship(back_populates="user")
 
 
 class Session(SQLModel, table=True):
@@ -35,7 +35,7 @@ class Session(SQLModel, table=True):
     last_seen: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     expires_at: datetime = Field(default_factory=default_expires, nullable=False)
 
-    user: User | None = Relationship(back_populates="sessions")
+    user: "User" = Relationship(back_populates="sessions")
 
 
 class Credential(SQLModel, table=True):
@@ -45,7 +45,7 @@ class Credential(SQLModel, table=True):
     expires_at: datetime = Field(nullable=False)
     scope: Optional[str] = Field(default=None, nullable=True)
 
-    user: User | None = Relationship(back_populates="credentials")
+    user: "User" = Relationship(back_populates="credentials")
 
 
 class ActivityCache(SQLModel, table=True):
