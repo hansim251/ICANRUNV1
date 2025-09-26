@@ -17,7 +17,7 @@ def default_expires() -> datetime:
 
 class User(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    athlete_id: int = Field(index=True, unique=True, nullable=False)
+    athlete_id: int = Field(sa_column=Column(BigInteger, nullable=False, unique=True, index=True))
     username: Optional[str] = Field(default=None, nullable=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
